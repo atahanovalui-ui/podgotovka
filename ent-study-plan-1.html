@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ЕНТ 2026 — Quest Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #0a0a1a;
+  --panel:  #12112a;
+  --panel2: #1a1838;
+  --border: #3a3060;
+  --violet: #9d6fff;
+  --vglow:  rgba(157,111,255,0.35);
+  --gold:   #ffd166;
+  --gglow:  rgba(255,209,102,0.3);
+  --rose:   #ff6b9d;
+  --teal:   #06d6a0;
+  --text:   #e8e0ff;
+  --dim:    #6a5f8a;
+  --pixel:  'Press Start 2P', monospace;
+  --vt:     'VT323', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; image-rendering:pixelated; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--pixel);
+  font-size: 8px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* Pixel grid background */
+  background-image:
+    linear-gradient(rgba(157,111,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(157,111,255,0.03) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+/* Studio glow orbs */
+.glow-v {
+  position: fixed; top: -200px; left: -100px;
+  width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(157,111,255,0.12) 0%, transparent 65%);
+  pointer-events: none; z-index: 0;
+}
+.glow-g {
+  position: fixed; top: -100px; right: -150px;
+  width: 500px; height: 500px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,209,102,0.09) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+.glow-g2 {
+  position: fixed; bottom: -200px; left: 50%;
+  transform: translateX(-50%);
+  width: 700px; height: 400px;
+  background: radial-gradient(ellipse, rgba(255,209,102,0.05) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+
+.wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Pixel border mixin (CSS only) ── */
+.px-box {
+  position: relative;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  /* Pixel-style corner cutouts */
+  clip-path: polygon(
+    0px 6px, 6px 6px, 6px 0px,
+    calc(100% - 6px) 0px, calc(100% - 6px) 6px, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 6px calc(100% - 6px), 0px calc(100% - 6px)
+  );
+}
+
+.px-box-gold {
+  background: var(--panel);
+  border: 3px solid var(--gold);
+  box-shadow: 0 0 20px var(--gglow), inset 0 0 20px rgba(255,209,102,0.04);
+  clip-path: polygon(
+    0px 6px, 6px 6px, 6px 0px,
+    calc(100% - 6px) 0px, calc(100% - 6px) 6px, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 6px calc(100% - 6px), 0px calc(100% - 6px)
+  );
+}
+
+/* ── HEADER ── */
+.header {
+  padding: 40px 0 32px;
+  text-align: center;
+  opacity: 0;
+  animation: fadein .4s ease forwards .1s;
+}
+
+.header-eyebrow {
+  font-size: 7px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  margin-bottom: 20px;
+  text-shadow: 0 0 12px var(--gglow);
+  animation: blink 2s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.header h1 {
+  font-size: clamp(14px, 3vw, 24px);
+  color: var(--violet);
+  text-shadow: 0 0 20px var(--vglow), 3px 3px 0 #3a1d88;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+.header h1 .gold { color: var(--gold); text-shadow: 0 0 20px var(--gglow), 3px 3px 0 #7a4800; }
+
+.header-sub {
+  font-family: var(--vt);
+  font-size: 20px;
+  color: var(--dim);
+  letter-spacing: 2px;
+  margin-bottom: 32px;
+}
+
+/* ── HUD bar (top stats) ── */
+.hud {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: fadein .4s ease forwards .2s;
+}
+
+.hud-cell {
+  padding: 14px 10px;
+  text-align: center;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  transition: border-color .2s, box-shadow .2s;
+  position: relative;
+  overflow: hidden;
+}
+.hud-cell::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--border);
+}
+.hud-cell.gold-cell {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(255,209,102,.2);
+}
+.hud-cell.gold-cell::before { background: var(--gold); }
+.hud-cell:hover { border-color: var(--violet); box-shadow: 0 0 12px var(--vglow); }
+
+.hud-label {
+  font-size: 6px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.hud-val {
+  font-family: var(--vt);
+  font-size: 24px;
+  color: var(--text);
+  line-height: 1;
+}
+.hud-cell.gold-cell .hud-val { color: var(--gold); text-shadow: 0 0 10px var(--gglow); }
+
+/* ── Ring (EXP circle) ── */
+.exp-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: fadein .4s ease forwards .3s;
+}
+.exp-box {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  padding: 28px 48px;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  box-shadow: 0 0 40px rgba(157,111,255,.08);
+}
+.ring-outer { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+.ring-outer svg { transform: rotate(-90deg); width: 130px; height: 130px; }
+.r-bg   { fill: none; stroke: var(--panel2); stroke-width: 12; }
+.r-fill {
+  fill: none; stroke: url(#rgrad); stroke-width: 12;
+  stroke-linecap: square;
+  stroke-dasharray: 352; stroke-dashoffset: 352;
+  transition: stroke-dashoffset 1s ease;
+}
+.ring-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.ring-pct {
+  font-family: var(--vt);
+  font-size: 36px;
+  color: var(--gold);
+  text-shadow: 0 0 12px var(--gglow);
+  line-height: 1;
+}
+.ring-sub { font-size: 6px; color: var(--dim); margin-top: 4px; letter-spacing: 1px; }
+.exp-info { display: flex; flex-direction: column; gap: 6px; }
+.exp-title { font-size: 7px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; text-shadow: 0 0 8px var(--gglow); }
+.exp-line { font-family: var(--vt); font-size: 18px; color: var(--dim); }
+.exp-line span { color: var(--text); }
+
+/* ── Pixel HP bar ── */
+.bar-wrap { margin-bottom: 6px; }
+.bar-label {
+  display: flex; justify-content: space-between;
+  font-size: 6px; color: var(--dim);
+  margin-bottom: 5px; letter-spacing: .5px;
+}
+.bar-label span { color: var(--text); }
+.bar-track {
+  height: 12px;
+  background: var(--panel2);
+  border: 2px solid var(--border);
+  padding: 2px;
+  position: relative;
+}
+.bar-fill {
+  height: 100%;
+  transition: width .9s cubic-bezier(.4,0,.2,1);
+  width: 0%;
+  position: relative;
+  /* Pixel scanline effect */
+  background-size: 4px 4px;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,0,0,.15) 2px, rgba(0,0,0,.15) 4px
+  );
+}
+.bar-fill.m  { background-color: var(--violet); box-shadow: 0 0 8px var(--vglow); }
+.bar-fill.p  { background-color: var(--rose);   box-shadow: 0 0 8px rgba(255,107,157,.3); }
+.bar-fill.pr { background-color: var(--gold);   box-shadow: 0 0 8px var(--gglow); }
+.bar-fill.h  { background-color: var(--teal);   box-shadow: 0 0 8px rgba(6,214,160,.3); }
+
+/* ── Quest panels ── */
+.quests {
+  display: flex; flex-direction: column; gap: 16px;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: fadein .4s ease forwards .5s;
+}
+
+.quest-panel {
+  background: var(--panel);
+  border: 3px solid var(--border);
+  transition: border-color .2s, box-shadow .2s;
+  overflow: hidden;
+}
+.quest-panel:hover { border-color: var(--violet); box-shadow: 0 0 20px var(--vglow); }
+.quest-panel.gold:hover { border-color: var(--gold); box-shadow: 0 0 20px var(--gglow); }
+
+.quest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 14px;
+  border-bottom: 2px solid var(--border);
+  background: var(--panel2);
+}
+
+.quest-title-wrap { display: flex; align-items: center; gap: 12px; }
+.quest-icon { font-size: 16px; image-rendering: auto; }
+.quest-name {
+  font-size: 9px;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.quest-panel.math .quest-name  { color: var(--violet); text-shadow: 0 0 8px var(--vglow); }
+.quest-panel.phys .quest-name  { color: var(--rose);   text-shadow: 0 0 8px rgba(255,107,157,.3); }
+.quest-panel.prob .quest-name  { color: var(--gold);   text-shadow: 0 0 8px var(--gglow); }
+.quest-panel.hist .quest-name  { color: var(--teal);   text-shadow: 0 0 8px rgba(6,214,160,.3); }
+
+.quest-count {
+  font-family: var(--vt);
+  font-size: 26px;
+  color: var(--dim);
+}
+.quest-panel.math .quest-count { color: var(--violet); }
+.quest-panel.phys .quest-count { color: var(--rose); }
+.quest-panel.prob .quest-count { color: var(--gold); }
+.quest-panel.hist .quest-count { color: var(--teal); }
+
+.quest-body { padding: 20px 24px; }
+
+/* Lesson pixel dots */
+.ldots { display: flex; flex-wrap: wrap; gap: 4px; }
+.ld {
+  width: 18px; height: 18px;
+  cursor: pointer;
+  transition: transform .1s;
+  position: relative;
+  /* Pixel style */
+  image-rendering: pixelated;
+}
+.ld:hover { transform: scale(1.6); z-index: 10; }
+.ld.done { opacity: 1; }
+.ld.pending { opacity: .12; }
+.ld.m { background: var(--violet); box-shadow: inset -2px -2px 0 #5530c0, inset 2px 2px 0 #c0a0ff; }
+.ld.p { background: var(--rose);   box-shadow: inset -2px -2px 0 #a02060, inset 2px 2px 0 #ffa0c0; }
+.ld.m.done:hover { box-shadow: inset -2px -2px 0 #5530c0, inset 2px 2px 0 #c0a0ff, 0 0 12px var(--vglow); }
+
+/* Probnik pixel cards */
+.pdots { display: flex; flex-wrap: wrap; gap: 6px; }
+.pdot {
+  width: 54px; height: 50px;
+  background: var(--panel2);
+  border: 2px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.pdot:hover { border-color: var(--gold); background: rgba(255,209,102,.06); transform: translateY(-2px); }
+.pdot.done {
+  background: rgba(255,209,102,.1);
+  border-color: var(--gold);
+  box-shadow: 0 0 10px var(--gglow);
+}
+.pdot.pending { opacity: .25; }
+.pdot-sym { font-size: 14px; image-rendering: auto; line-height: 1; }
+.pdot-dt {
+  font-size: 6px;
+  color: var(--dim);
+  letter-spacing: .5px;
+}
+.pdot.done .pdot-dt { color: var(--gold); }
+
+/* History checklist */
+.hlist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 5px;
+}
+.hitem {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: var(--panel2);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+.hitem:hover { border-color: var(--teal); background: rgba(6,214,160,.06); }
+.hitem.done { background: rgba(6,214,160,.08); border-color: var(--teal); }
+.hpx {
+  width: 12px; height: 12px; flex-shrink: 0;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; line-height: 1;
+}
+.hitem.done .hpx { background: var(--teal); border-color: var(--teal); color: #000; }
+.hlabel { font-size: 6px; color: var(--dim); }
+.hitem.done .hlabel { color: var(--teal); }
+
+/* ── Footer tips ── */
+.tips {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 8px;
+  opacity: 0;
+  animation: fadein .4s ease forwards .7s;
+}
+.tip-panel {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  padding: 18px 16px;
+}
+.tip-head {
+  font-size: 7px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.tip-head::before { content: '▶'; font-size: 7px; }
+.tip-text { font-family: var(--vt); font-size: 16px; color: var(--dim); line-height: 1.5; }
+
+/* ── Scanline overlay ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px
+  );
+  pointer-events: none; z-index: 999;
+}
+
+@keyframes fadein { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+@media(max-width:700px){
+  .hud{grid-template-columns:repeat(3,1fr)}
+  .exp-box{flex-direction:column;padding:24px;gap:24px}
+  .tips{grid-template-columns:1fr}
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+</style>
+</head>
+<body>
+
+<div class="glow-v"></div>
+<div class="glow-g"></div>
+<div class="glow-g2"></div>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">▼ QUEST BOARD ACTIVATED ▼</div>
+    <h1>ПОДГОТОВКА К <span class="gold">ЕНТ</span><br>ФИЗМАТ 2026</h1>
+    <div class="header-sub">[ 90 уроков · 3 предмета · дедлайн 30 апреля ]</div>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-cell">
+      <div class="hud-label">СТАРТ</div>
+      <div class="hud-val">18 МАР</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">ДЕДЛАЙН</div>
+      <div class="hud-val">30 АПР</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">ОСТАЛОСЬ</div>
+      <div class="hud-val" id="daysleft">—</div>
+    </div>
+    <div class="hud-cell">
+      <div class="hud-label">УРОКОВ</div>
+      <div class="hud-val">58+32</div>
+    </div>
+    <div class="hud-cell gold-cell">
+      <div class="hud-label">НОРМА / ДЕНЬ</div>
+      <div class="hud-val">×2</div>
+    </div>
+  </div>
+
+  <!-- EXP RING -->
+  <div class="exp-wrap">
+    <div class="exp-box">
+      <div class="ring-outer">
+        <svg viewBox="0 0 130 130">
+          <defs>
+            <linearGradient id="rgrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#9d6fff"/>
+              <stop offset="100%" stop-color="#ffd166"/>
+            </linearGradient>
+          </defs>
+          <circle class="r-bg"   cx="65" cy="65" r="56"/>
+          <circle class="r-fill" id="rfill" cx="65" cy="65" r="56"/>
+        </svg>
+        <div class="ring-text">
+          <div class="ring-pct" id="rpct">0%</div>
+          <div class="ring-sub">EXP</div>
+        </div>
+      </div>
+      <div class="exp-info">
+        <div class="exp-title">▸ ОБЩИЙ ПРОГРЕСС</div>
+        <div class="exp-line">МАТЕМАТИКА  <span id="md-exp">0</span>/58</div>
+        <div class="exp-line">ФИЗИКА&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="pd-exp">0</span>/32</div>
+        <div class="exp-line">ПРОБНИКИ&nbsp;&nbsp;&nbsp;&nbsp;<span id="prd-exp">0</span>/<span id="prt-exp">—</span></div>
+        <div class="exp-line">ИСТОРИЯ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="hd-exp">0</span>/30</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUESTS -->
+  <div class="quests">
+
+    <!-- MATH -->
+    <div class="quest-panel math">
+      <div class="quest-header">
+        <div class="quest-title-wrap">
+          <div class="quest-icon">📐</div>
+          <div class="quest-name">КВЕСТ: МАТЕМАТИКА</div>
+        </div>
+        <div class="quest-count"><span id="md">0</span>/58</div>
+      </div>
+      <div class="quest-body">
+        <div class="bar-wrap">
+          <div class="bar-label">HP <span id="mpct">0%</span></div>
+          <div class="bar-track"><div class="bar-fill m" id="mbar"></div></div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="ldots" id="mdots"></div>
+      </div>
+    </div>
+
+    <!-- PHYS -->
+    <div class="quest-panel phys">
+      <div class="quest-header">
+        <div class="quest-title-wrap">
+          <div class="quest-icon">⚡</div>
+          <div class="quest-name">КВЕСТ: ФИЗИКА</div>
+        </div>
+        <div class="quest-count"><span id="pd">0</span>/32</div>
+      </div>
+      <div class="quest-body">
+        <div class="bar-wrap">
+          <div class="bar-label">HP <span id="ppct">0%</span></div>
+          <div class="bar-track"><div class="bar-fill p" id="pbar"></div></div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="ldots" id="pdots"></div>
+      </div>
+    </div>
+
+    <!-- PROBNIKI -->
+    <div class="quest-panel prob gold">
+      <div class="quest-header">
+        <div class="quest-title-wrap">
+          <div class="quest-icon">📝</div>
+          <div class="quest-name">КВЕСТ: ПРОБНИКИ</div>
+        </div>
+        <div class="quest-count"><span id="prd">0</span>/<span id="prtotal">—</span></div>
+      </div>
+      <div class="quest-body">
+        <div class="bar-wrap">
+          <div class="bar-label">ПРОГРЕСС <span id="prpct">0%</span></div>
+          <div class="bar-track"><div class="bar-fill pr" id="prbar"></div></div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="pdots" id="prdots"></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="quest-panel hist">
+      <div class="quest-header">
+        <div class="quest-title-wrap">
+          <div class="quest-icon">📜</div>
+          <div class="quest-name">КВЕСТ: ИСТОРИЯ · 30 МИН/ДЕНЬ</div>
+        </div>
+        <div class="quest-count"><span id="hd">0</span>/30</div>
+      </div>
+      <div class="quest-body">
+        <div class="bar-wrap">
+          <div class="bar-label">ПРОГРЕСС <span id="hpct">0%</span></div>
+          <div class="bar-track"><div class="bar-fill h" id="hbar"></div></div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="hlist" id="hlist"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TIPS -->
+  <div class="tips">
+    <div class="tip-panel">
+      <div class="tip-head">НОРМА</div>
+      <div class="tip-text">Минимум 2 урока каждый день. Математика + физика параллельно. Когда физика завершится — оба урока по математике.</div>
+    </div>
+    <div class="tip-panel">
+      <div class="tip-head">СТРУКТУРА ДНЯ</div>
+      <div class="tip-text">Сначала математика, затем физика, история вечером. В день пробника — начинай с него. Разбор ошибок на следующее утро.</div>
+    </div>
+    <div class="tip-panel">
+      <div class="tip-head">ПРОБНИКИ</div>
+      <div class="tip-text">После каждого пробника записывай темы ошибок. Следующий день начинай именно с них — это быстрее всего поднимает балл.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const MATH_TOTAL=58, PHYS_TOTAL=32, HIST_TOTAL=30;
+const START=new Date(2026,2,18), END=new Date(2026,3,30);
+
+function countProb(){
+  let n=0; const c=new Date(START);
+  while(c<=END){const d=c.getDay();if(d===0||d===2||d===4||d===6)n++;c.setDate(c.getDate()+1);}
+  return n;
+}
+const PROB_TOTAL=countProb();
+['prtotal','prt-exp'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=PROB_TOTAL;});
+
+const KEY='ent_v9';
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return{}}};
+const save=s=>localStorage.setItem(KEY,JSON.stringify(s));
+let S=load();
+
+// Days left
+(()=>{
+  const d=Math.max(0,Math.ceil((END-new Date())/86400000));
+  document.getElementById('daysleft').textContent=d>0?`${d}Д`:'!END';
+})();
+
+// Ring
+function updateRing(){
+  const done=(S.math_done||0)+(S.phys_done||0);
+  const pct=Math.round(done/(MATH_TOTAL+PHYS_TOTAL)*100);
+  document.getElementById('rpct').textContent=pct+'%';
+  const circ=2*Math.PI*56;
+  const el=document.getElementById('rfill');
+  el.style.strokeDasharray=circ;
+  el.style.strokeDashoffset=circ-circ*pct/100;
+}
+
+function setPct(id,val,total){
+  const p=Math.round(val/total*100);
+  const el=document.getElementById(id);
+  if(el)el.textContent=p+'%';
+  return p;
+}
+
+function updateAll(){
+  const md=S.math_done||0, pd=S.phys_done||0;
+  const prd=S.prob_done||0, hd=S.hist_done||0;
+
+  // counts
+  ['md','md-exp'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=md;});
+  ['pd','pd-exp'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=pd;});
+  ['prd','prd-exp'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=prd;});
+  ['hd','hd-exp'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=hd;});
+
+  // bars
+  const mp=setPct('mpct',md,MATH_TOTAL);
+  const pp=setPct('ppct',pd,PHYS_TOTAL);
+  const prp=setPct('prpct',prd,PROB_TOTAL);
+  const hp=setPct('hpct',hd,HIST_TOTAL);
+
+  document.getElementById('mbar').style.width=mp+'%';
+  document.getElementById('pbar').style.width=pp+'%';
+  document.getElementById('prbar').style.width=prp+'%';
+  document.getElementById('hbar').style.width=hp+'%';
+
+  updateRing();
+}
+
+function makeLessonDots(cid,total,cls,key){
+  const c=document.getElementById(cid); c.innerHTML='';
+  const done=S[key]||0;
+  for(let i=1;i<=total;i++){
+    const el=document.createElement('div');
+    el.className=`ld ${cls} ${i<=done?'done':'pending'}`;
+    el.title=`Урок ${i}`;
+    el.onclick=()=>{S[key]=i<=(S[key]||0)?i-1:i;save(S);makeLessonDots(cid,total,cls,key);updateAll();};
+    c.appendChild(el);
+  }
+}
+
+function makeProbDots(){
+  const c=document.getElementById('prdots'); c.innerHTML='';
+  const done=S.prob_done||0;
+  const MN=['янв','фев','мар','апр','май'];
+  const dates=[];
+  const cur=new Date(START);
+  while(cur<=END){const d=cur.getDay();if(d===0||d===2||d===4||d===6)dates.push(new Date(cur));cur.setDate(cur.getDate()+1);}
+  dates.forEach((date,pi)=>{
+    const el=document.createElement('div');
+    el.className=`pdot ${pi<done?'done':'pending'}`;
+    el.innerHTML=`<div class="pdot-sym">${pi<done?'★':'◆'}</div><div class="pdot-dt">${date.getDate()} ${MN[date.getMonth()]}</div>`;
+    el.title=`Пробник ${pi+1}`;
+    el.onclick=()=>{S.prob_done=pi<(S.prob_done||0)?pi:pi+1;save(S);makeProbDots();updateAll();};
+    c.appendChild(el);
+  });
+}
+
+function makeHistList(){
+  const c=document.getElementById('hlist'); c.innerHTML='';
+  const done=S.hist_done||0;
+  for(let i=0;i<HIST_TOTAL;i++){
+    const isDone=i<done;
+    const el=document.createElement('div');
+    el.className=`hitem ${isDone?'done':''}`;
+    el.innerHTML=`<div class="hpx">${isDone?'✓':''}</div><div class="hlabel">ДЕНЬ ${String(i+1).padStart(2,'0')}</div>`;
+    el.onclick=()=>{S.hist_done=i<(S.hist_done||0)?i:i+1;save(S);makeHistList();updateAll();};
+    c.appendChild(el);
+  }
+}
+
+makeLessonDots('mdots',MATH_TOTAL,'m','math_done');
+makeLessonDots('pdots',PHYS_TOTAL,'p','phys_done');
+makeProbDots();
+makeHistList();
+updateAll();
+</script>
+</body>
+</html>
